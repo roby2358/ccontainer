@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A two-file definition of a sandboxed dev container for running Claude Code on Windows/WSL2 via podman. The image bundles `claude-code`, `gh`, `git`, `uv`, `podman`, `ripgrep`, and Node 22. Inside the container, the alias `cc` runs `claude --dangerously-skip-permissions`.
+A two-file definition of a sandboxed dev container for running Claude Code on Windows/WSL2 via podman. The image bundles `claude-code`, `gh`, `git`, `uv`, `ripgrep`, and Node 22. Inside the container, the alias `cc` runs `claude --dangerously-skip-permissions`.
 
 There is no application code here, no test suite, and no language toolchain to set up. Edits land in `Containerfile` or `run.sh`.
 
@@ -17,13 +17,11 @@ There is no application code here, no test suite, and no language toolchain to s
 
 ## Architecture notes that are not obvious from one file
 
-The container is designed for **podman-in-podman without nesting**: instead of running a podman daemon inside the container, `run.sh` bind-mounts the host's user podman socket (`$XDG_RUNTIME_DIR/podman/podman.sock`) into the container at `/run/podman/podman.sock` and exports `CONTAINER_HOST` so the in-container `podman` CLI talks back to the host daemon. Any container started "from inside" actually runs as a sibling on the host. This requires `systemctl --user start podman.socket` on the host first; `run.sh` warns but does not fail if the socket is missing.
-
 Three host paths are shared into the container, and changes to anything under them are real edits to host state:
 
 - `/mnt/c/work` → `/work` (the WSL view of the Windows `C:\work` directory; this is the working tree)
 - `$HOME/.claude` → `/home/roby/.claude` (Claude Code config + memory; shared with the host's Claude Code)
-- `$HOME/.config/gh` → `/home/roby/.config/gh` (gh auth; do `gh auth login` on the host first)
+- `$HOME/.config/gh` → `/home/roby/.config/gh` read-only (gh auth; do `gh auth login` on the host first — re-auth must happen on the host)
 
 The rest of `/home/roby` lives in a named podman volume `ccontainer-home`, so shell history, npm caches, and similar persist across `--rm` runs without leaking into the host home.
 
