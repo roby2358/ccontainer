@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 \
         python3-venv \
         openssh-client \
+        vim \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
         | gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
@@ -23,7 +24,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 RUN npm install -g @anthropic-ai/claude-code
 
-RUN echo "alias cc='claude --dangerously-skip-permissions'" > /etc/profile.d/cc.sh
+RUN { \
+        echo "alias cc='claude --dangerously-skip-permissions'"; \
+        echo "alias ll='ls -lA'"; \
+    } > /etc/profile.d/cc.sh
 
 RUN { \
         echo 'if [ -f "$HOME/.gitconfig.host" ] && ! grep -qF .gitconfig.host "$HOME/.gitconfig" 2>/dev/null; then'; \
