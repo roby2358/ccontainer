@@ -25,3 +25,18 @@ Auto-builds `ccontainer:latest` on first run. Then `cc` inside.
 - everything else in `/home/roby` ← podman volume `ccontainer-home`
 
 Container itself is `--rm`.
+
+## Windows Terminal profile
+
+To add the container to the Windows Terminal dropdown, open **Settings → JSON** (`Ctrl+Shift+,`) and add this to the `profiles.list` array:
+
+```json
+{
+    "name": "ccontainer",
+    "commandline": "wsl.exe -d Ubuntu -- /mnt/c/work/ccontainer/run.sh",
+    "icon": "🐳",
+    "startingDirectory": "C:\\work"
+}
+```
+
+Change the `-d Ubuntu` distro name if yours differs (`wsl -l` to check).
