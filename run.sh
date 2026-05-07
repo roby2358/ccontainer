@@ -6,9 +6,7 @@ VOLUME="ccontainer-home"
 
 cd "$(dirname "$0")"
 
-if ! podman image exists "$IMAGE"; then
-    podman build -t "$IMAGE" .
-fi
+podman build --pull=newer -t "$IMAGE" .
 
 if [[ ! -d "$HOME/.config/gh" ]]; then
     echo "warning: $HOME/.config/gh not found — run 'gh auth login' on the host first" >&2

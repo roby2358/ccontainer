@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim
+FROM node:lts-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
@@ -22,7 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm install -g npm@latest \
+    && npm install -g @anthropic-ai/claude-code
 
 RUN { \
         echo "alias cc='claude --dangerously-skip-permissions'"; \

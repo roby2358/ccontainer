@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A two-file definition of a sandboxed dev container for running Claude Code on Windows/WSL2 via podman. The image bundles `claude-code`, `gh`, `git`, `uv`, `ripgrep`, and Node 22. Inside the container, the alias `cc` runs `claude --dangerously-skip-permissions`.
+A two-file definition of a sandboxed dev container for running Claude Code on Windows/WSL2 via podman. The image bundles `claude-code`, `gh`, `git`, `uv`, `ripgrep`, and Node.js (current LTS, via the `node:lts-bookworm-slim` base). Inside the container, the alias `cc` runs `claude --dangerously-skip-permissions`.
 
 There is no application code here, no test suite, and no language toolchain to set up. Edits land in `Containerfile` or `run.sh`.
 
 ## Common commands
 
 - Build image manually: `podman build -t ccontainer:latest .`
-- Build + run (auto-builds if image missing): `./run.sh`
-- Rebuild from scratch: `podman rmi localhost/ccontainer:latest && ./run.sh`
+- Build + run: `./run.sh` (always runs `podman build --pull=newer`, so a stale base image rolls forward automatically; cached otherwise)
+- Force a clean rebuild: `podman rmi localhost/ccontainer:latest && ./run.sh`
 - Reset persistent home: `podman volume rm ccontainer-home`
 
 ## Architecture notes that are not obvious from one file
