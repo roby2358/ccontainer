@@ -6,7 +6,7 @@ VOLUME="ccontainer-home"
 
 cd "$(dirname "$0")"
 
-podman build --pull=newer -t "$IMAGE" .
+podman build --pull=newer --build-arg CC_CACHE_BUST="$(date +%s)" -t "$IMAGE" .
 
 if [[ ! -d "$HOME/.config/gh" ]]; then
     echo "warning: $HOME/.config/gh not found — run 'gh auth login' on the host first" >&2

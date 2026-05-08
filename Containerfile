@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
+ARG CC_CACHE_BUST=0
 RUN npm install -g npm@latest \
     && npm install -g @anthropic-ai/claude-code
 
