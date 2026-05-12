@@ -6,15 +6,37 @@ VOLUME="ccontainer-home"
 
 cd "$(dirname "$0")"
 
-podman build --pull=newer --build-arg CC_CACHE_BUST="$(date +%s)" -t "$IMAGE" .
+check_claude_code() {
+    local installed latest
+    installed=$(podman run --rm "$IMAGE" claude --version 2>/dev/null | awk '{print $1}') || return 0
+    latest=$(curl -fsSL --max-time 3 https://registry.npmjs.org/@anthropic-ai/claude-code/latest 2>/dev/null \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])' 2>/dev/null) || return 0
+    [[ -n "$installed" && -n "$latest" && "$installed" != "$latest" ]] || return 0
+    echo "claude-code: $installed installed, $latest available — run ./rebuild.sh to update" >&2
+}
 
-if [[ ! -d "$HOME/.config/gh" ]]; then
-    echo "warning: $HOME/.config/gh not found — run 'gh auth login' on the host first" >&2
-fi
+check_node_base() {
+    local local_digest remote_digest
+    local_digest=$(podman image inspect node:lts-bookworm-slim --format '{{index .RepoDigests 0}}' 2>/dev/null \
+        | sed 's/.*@//') || return 0
+    remote_digest=$(curl -fsSL --max-time 3 https://hub.docker.com/v2/repositories/library/node/tags/lts-bookworm-slim 2>/dev/null \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["digest"])' 2>/dev/null) || return 0
+    [[ -n "$local_digest" && -n "$remote_digest" && "$local_digest" != "$remote_digest" ]] || return 0
+    echo "node base: newer image available on registry — run ./rebuild.sh to update" >&2
+}
 
-if [[ ! -f "$HOME/.gitconfig" ]]; then
-    echo "warning: $HOME/.gitconfig not found — set user.name/user.email on the host first" >&2
-fi
+check_host_paths() {
+    [[ -d "$HOME/.config/gh" ]] \
+        || echo "warning: $HOME/.config/gh not found — run 'gh auth login' on the host first" >&2
+    [[ -f "$HOME/.gitconfig" ]] \
+        || echo "warning: $HOME/.gitconfig not found — set user.name/user.email on the host first" >&2
+}
+
+check_claude_code
+check_node_base
+check_host_paths
+
+podman build -q -t "$IMAGE" .
 
 exec podman run --rm -it \
     --userns=keep-id \

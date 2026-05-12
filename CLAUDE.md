@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A two-file definition of a sandboxed dev container for running Claude Code on Windows/WSL2 via podman. The image bundles `claude-code`, `gh`, `git`, `uv`, `ripgrep`, and Node.js (current LTS, via the `node:lts-bookworm-slim` base). Inside the container, the alias `cc` runs `claude --dangerously-skip-permissions`.
+A small sandboxed dev container for running Claude Code on Windows/WSL2 via podman. The image bundles `claude-code`, `gh`, `git`, `uv`, `just`, `ripgrep`, and Node.js (current LTS, via the `node:lts-bookworm-slim` base). Inside the container, the alias `cc` runs `claude --dangerously-skip-permissions`.
 
-There is no application code here, no test suite, and no language toolchain to set up. Edits land in `Containerfile` or `run.sh`.
+There is no application code here, no test suite, and no language toolchain to set up. Edits land in `Containerfile`, `run.sh`, or `rebuild.sh`.
 
 ## Common commands
 
+- Build + run: `./run.sh` — runs a plain `podman build` (cache-heavy, near-instant once warm) and then `podman run` with all bind mounts. Before building it does two soft version checks and prints a warning if newer versions exist: installed `claude-code` vs the npm registry, and the local `node:lts-bookworm-slim` digest vs Docker Hub. The checks never mutate anything — `./rebuild.sh` is what acts on them.
+- Force a fresh image: `./rebuild.sh` — `podman build --no-cache --pull=newer`. Use this when a check warns about a stale claude-code or node base, or after non-trivial `Containerfile` edits.
 - Build image manually: `podman build -t ccontainer:latest .`
-- Build + run: `./run.sh` (always runs `podman build --pull=newer`, so a stale base image rolls forward automatically; cached otherwise)
-- Force a clean rebuild: `podman rmi localhost/ccontainer:latest && ./run.sh`
 - Reset persistent home: `podman volume rm ccontainer-home`
 
 ## Architecture notes that are not obvious from one file
