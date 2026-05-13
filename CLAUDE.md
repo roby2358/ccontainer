@@ -30,6 +30,12 @@ Git identity + auth wiring spans the Containerfile and `run.sh`. On login, `/etc
 
 UID alignment uses `--userns=keep-id` plus a `roby` user created at uid 1000 in the image. The Containerfile deletes the default `node` user before creating `roby` to free uid 1000. If the host user is not uid 1000, file ownership on the bind mounts will look wrong. `roby` has passwordless `sudo` inside the container — fine because the container is `--rm` and unprivileged on the host, but it means anything inside can install packages or write to `/etc`.
 
+## Supply-chain hardening (npm)
+
+`/etc/npmrc` is baked into the image with `ignore-scripts=true` after the bootstrap installs, so every subsequent `npm install` and `npx` inside the container skips `pre/post install` lifecycle hooks by default. This is the standard defense against the Shai-Hulud-class self-propagating npm worms (first observed Sep 2025; Mini Shai-Hulud hit `@tanstack/*`, Mistral AI, UiPath, etc. in May 2026), which detonate their payload from a poisoned package's `postinstall` (v1) or `preinstall` (v2) hook the moment `npm install` or `npx <pkg>` touches the package. The two bootstrap installs run *before* the npmrc is written: the npm self-upgrade adds `--ignore-scripts` for belt-and-braces, and the `@anthropic-ai/claude-code` install is left untouched so its own legitimate postinstall can run. The host mirrors this protection with `ignore-scripts=true` in `~/.npmrc`. If a package genuinely needs its install hook (rare — usually a native-module dep), pass `--ignore-scripts=false` per command after auditing the source.
+
+`run.sh` and `rebuild.sh` inherit this protection structurally — both rebuild from `Containerfile`, so the `/etc/npmrc` is recreated on every image build. `rebuild.sh --no-cache` is the way to confirm the layer rebuilds cleanly after editing the hardening.
+
 ## Things to keep in mind when editing
 
 - `Containerfile` runs as root until the final `USER roby`. Anything that needs to land in `roby`'s home must either run after that line or be placed in `/etc/skel` / a shared location.

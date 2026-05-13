@@ -25,8 +25,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh \
         | bash -s -- --to /usr/local/bin
 
-RUN npm install -g npm@latest \
-    && npm install -g @anthropic-ai/claude-code
+RUN npm install -g --ignore-scripts npm@latest \
+    && npm install -g @anthropic-ai/claude-code \
+    && echo 'ignore-scripts=true' > /etc/npmrc
 
 RUN { \
         echo "alias cc='claude --dangerously-skip-permissions'"; \
