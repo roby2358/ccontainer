@@ -16,11 +16,15 @@ check_claude_code() {
 }
 
 check_node_base() {
-    local local_digest remote_digest
+    local local_digest remote_digest arch
     local_digest=$(podman image inspect node:lts-bookworm-slim --format '{{index .RepoDigests 0}}' 2>/dev/null \
         | sed 's/.*@//') || return 0
+    # podman records the per-arch manifest digest in RepoDigests, but Docker Hub's
+    # top-level tag "digest" is the multi-arch index digest — they never match. Compare
+    # against the matching per-arch digest from the API's images[] array instead.
+    arch=$(podman version --format '{{.Server.OsArch}}' 2>/dev/null | sed 's#.*/##') || return 0
     remote_digest=$(curl -fsSL --max-time 3 https://hub.docker.com/v2/repositories/library/node/tags/lts-bookworm-slim 2>/dev/null \
-        | python3 -c 'import json,sys; print(json.load(sys.stdin)["digest"])' 2>/dev/null) || return 0
+        | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(i['digest'] for i in d['images'] if i.get('architecture')=='$arch'))" 2>/dev/null) || return 0
     [[ -n "$local_digest" && -n "$remote_digest" && "$local_digest" != "$remote_digest" ]] || return 0
     echo "node base: newer image available on registry — run ./rebuild.sh to update" >&2
 }
