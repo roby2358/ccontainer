@@ -26,7 +26,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh \
         | bash -s -- --to /usr/local/bin
 
 RUN npm install -g --ignore-scripts npm@latest \
-    && npm install -g @anthropic-ai/claude-code \
+    && npm install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code \
     && echo 'ignore-scripts=true' > /etc/npmrc
 
 RUN { \
