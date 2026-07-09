@@ -16,15 +16,29 @@ check_claude_code() {
 }
 
 check_node_base() {
-    local local_digests remote_digest
+    local local_digests remote_digests arch d
     # podman records both the multi-arch index digest and the per-arch manifest digest
-    # in RepoDigests when an image is pulled via tag. Compare against the registry's
-    # top-level (multi-arch index) digest and accept a match on any local entry.
+    # in RepoDigests when an image is pulled via tag. The index gets re-pushed whenever
+    # any architecture (or attestation manifest) changes, so matching the index digest
+    # alone warns even when the host-arch image is unchanged. Compare the host-arch
+    # manifest digest — the only bytes a rebuild here would pull — and also accept an
+    # index-digest match in case RepoDigests lacks the per-arch entry.
+    case "$(uname -m)" in
+        x86_64)  arch=amd64 ;;
+        aarch64) arch=arm64 ;;
+        *)       arch=$(uname -m) ;;
+    esac
     local_digests=$(podman image inspect node:lts-bookworm-slim --format '{{range .RepoDigests}}{{.}} {{end}}' 2>/dev/null) || return 0
-    remote_digest=$(curl -fsSL --max-time 3 https://hub.docker.com/v2/repositories/library/node/tags/lts-bookworm-slim 2>/dev/null \
-        | python3 -c 'import json,sys; print(json.load(sys.stdin)["digest"])' 2>/dev/null) || return 0
-    [[ -n "$local_digests" && -n "$remote_digest" ]] || return 0
-    [[ "$local_digests" == *"@$remote_digest"* ]] && return 0
+    remote_digests=$(curl -fsSL --max-time 3 https://hub.docker.com/v2/repositories/library/node/tags/lts-bookworm-slim 2>/dev/null \
+        | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print(next((i['digest'] for i in d['images'] if i['architecture'] == '$arch'), ''), d['digest'])
+" 2>/dev/null) || return 0
+    [[ -n "$local_digests" && -n "$remote_digests" ]] || return 0
+    for d in $remote_digests; do
+        [[ "$local_digests" == *"@$d"* ]] && return 0
+    done
     echo "node base: newer image available on registry — run ./rebuild.sh to update" >&2
 }
 
