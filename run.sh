@@ -47,6 +47,8 @@ check_host_paths() {
         || echo "warning: $HOME/.config/gh not found — run 'gh auth login' on the host first" >&2
     [[ -f "$HOME/.gitconfig" ]] \
         || echo "warning: $HOME/.gitconfig not found — set user.name/user.email on the host first" >&2
+    [[ -d /data/littlebrain ]] \
+        || echo "warning: /data/littlebrain not found on host — littlebrain DBs will not be mounted in the container" >&2
 }
 
 check_claude_code
@@ -55,9 +57,16 @@ check_host_paths
 
 podman build -q -t "$IMAGE" .
 
+# Optional mounts: only bind host paths that exist, so the container still
+# starts on hosts without them (rootless podman cannot create missing
+# host-side mount sources).
+extra_mounts=()
+[[ -d /data/littlebrain ]] && extra_mounts+=(-v /data/littlebrain:/data/littlebrain)
+
 exec podman run --rm -it \
     --userns=keep-id \
     -v /mnt/c/work:/work \
+    "${extra_mounts[@]}" \
     -v "$VOLUME":/home/roby \
     -v "$HOME/.claude":/home/roby/.claude \
     -v "$HOME/.config/gh":/home/roby/.config/gh:ro \
