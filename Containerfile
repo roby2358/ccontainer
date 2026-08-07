@@ -30,7 +30,8 @@ RUN npm install -g --ignore-scripts npm@latest \
     && echo 'ignore-scripts=true' > /etc/npmrc
 
 RUN { \
-        echo "alias cc='claude --dangerously-skip-permissions'"; \
+        echo "alias cc='echo \"Remember to compact! (ccn if no context)\" && claude --dangerously-skip-permissions --continue'"; \
+        echo "alias ccn='claude --dangerously-skip-permissions'"; \
         echo "alias ll='ls -lA'"; \
     } > /etc/profile.d/cc.sh
 
