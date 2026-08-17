@@ -11,7 +11,7 @@ There is no application code here, no test suite, and no language toolchain to s
 ## Common commands
 
 - Build + run: `./run.sh` — runs a plain `podman build` (cache-heavy, near-instant once warm) and then `podman run` with all bind mounts. Before building it does two soft version checks and prints a warning if newer versions exist: installed `claude-code` vs the npm registry, and the local `node:lts-bookworm-slim` digest vs Docker Hub. The checks never mutate anything — `./rebuild.sh` is what acts on them.
-- Force a fresh image: `./rebuild.sh` — `podman build --no-cache --pull=newer`. Use this when a check warns about a stale claude-code or node base, or after non-trivial `Containerfile` edits.
+- Force a fresh image: `./rebuild.sh` — does an explicit `podman pull docker.io/library/node:lts-bookworm-slim` and then `podman build --no-cache`. The separate pull replaces the build's old `--pull=newer`, which in podman 4.9.x could silently no-op on a re-pushed tag and leave the build on a stale cached base; the explicit fully-qualified pull always queries the registry and fails loudly if it can't reach docker.io. Use this when a check warns about a stale claude-code or node base, or after non-trivial `Containerfile` edits.
 - Build image manually: `podman build -t ccontainer:latest .`
 - Reset persistent home: `podman volume rm ccontainer-home`
 
