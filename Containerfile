@@ -43,6 +43,9 @@ RUN { \
         echo '        echo "[credential]"'; \
         echo '        echo "    helper ="'; \
         echo '        echo "    helper = !gh auth git-credential"'; \
+        echo '        echo "[core]"'; \
+        echo '        echo "    autocrlf = false"'; \
+        echo '        echo "    eol = lf"'; \
         echo '    } > "$HOME/.gitconfig"'; \
         echo 'fi'; \
     } > /etc/profile.d/gitconfig-init.sh
